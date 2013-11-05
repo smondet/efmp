@@ -1,0 +1,148 @@
+
+type path = string
+
+type monitored_script = {
+  program: string list;
+}
+type timespan = [ 
+  | Hours of float
+]
+type emailing = [
+  | Always of string
+  | Never
+]
+type pbs_script = {
+  script: monitored_script;
+  name: string;
+  shell: string;
+  walltime: timespan;
+  emailing: emailing;
+  queue: string option;
+  nodes: int;
+  ppn: int;
+  (* Later:
+  ?(array_indexes: array_index list option)
+  ?(dependencies: dependency list option)
+  *)
+} <ocaml field_prefix="pbs_" >
+
+type nohup_script = {
+  name: string;
+  script: monitored_script;
+} <ocaml field_prefix="nohup_" >
+
+type configuration = {
+  ssh_style: [Openssh | Dropbear];
+}
+
+type ssh = {
+  address: string;
+  port: int option;
+  user: string option;
+}
+type connection = [
+  | Host_SSH of ssh
+  | Host_home
+] <ocaml repr="classic">
+
+type host = {
+  host_name: string;  
+  connection: connection;
+  playground: path option;
+  command_qsub: string option;
+  command_qstat: string option;
+  command_qdel: string option;
+}
+type action_edsl = [
+  | Action_empty
+  | Action_get_output of (string * string list)
+  | Action_monitored_PBS of pbs_script
+  | Action_monitored_nohup of nohup_script
+] <ocaml repr="classic">
+
+type action = {
+  host: host;
+  action: action_edsl;
+}
+type file = {
+  host: host;
+  path: path;
+} <ocaml field_prefix="file_">
+
+type target = [
+  | Target_file_exists of file
+] <ocaml repr="classic">
+
+type rule = {
+  name: string;
+  target: target;
+  todo: todo;
+  dependencies: target list;
+} <ocaml  field_prefix="rule_">
+
+type make = {
+  name: string;
+  final_target: target;
+  rules: rule list;
+} <ocaml field_prefix="make_">
+
+type todo = [
+  | Do_action of action
+  | Do_make of make
+] <ocaml repr="classic">
+
+(* End of the “declarative” part *)
+
+type running_make = {
+  todo: make;
+  actions: string list;
+  history <ocaml mutable>: string list; (* TODO *)
+} <ocaml field_prefix="running_make_">
+
+type running_pbs = {
+  host: host;
+  script: pbs_script;
+  job_id: string;
+  playground: string;
+  history <ocaml mutable>: string list; (* TODO *)
+} <ocaml field_prefix="running_pbs_">
+
+type running_nohup = {
+  host: host;
+  script: nohup_script;
+  pid: int option;
+  playground: string;
+  history <ocaml mutable>: string list; (* TODO *)
+} <ocaml field_prefix="running_nohup_">
+
+type running_get_output = {
+  host: host;
+  name: string;
+  commands: string list;
+  history <ocaml mutable>: string list; (* TODO *)
+} <ocaml field_prefix="running_get_output_">
+
+type running = [
+  | Running_empty of host
+  | Running_make of running_make
+  | Running_pbs of running_pbs
+  | Running_nohup of running_nohup
+  | Running_get_output of running_get_output
+] <ocaml repr="classic">
+
+type completed = {
+  status: [Success of running | Failure of (running option * string)];
+  stdout: string option;
+  stderr: string option;
+} <ocaml field_prefix="completed_">
+
+type execution_engine = {
+  (* states_map: (string * execution_state) list; *)
+  declared <ocaml mutable>: (string * todo) list;
+  running <ocaml mutable>: (string * running) list;
+  completed <ocaml mutable>: (string * completed) list;
+  log <ocaml mutable>: (string * string) list;
+  configuration <ocaml mutable>: configuration;
+} <ocaml field_prefix="engine_">
+
+

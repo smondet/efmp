@@ -1,0 +1,89 @@
+
+
+open build/OCaml
+DefineCommandVars()
+
+PACKAGE_NAME = efmp
+PACKAGE_VERSION = 0.0.0-dev
+PACKAGE_DESCRIPTION = EDSL Library For Managing Processes
+PACKAGE_DEPENDENCIES = nonstd sosa pvem atdgen cmdliner pvem_lwt_unix pbs
+
+.PHONY: clean install_library install uninstall uninstall_library \
+    doc_library doc web update_licenses test
+
+USE_OCAMLFIND = true
+
+CAMLP4_PACKS[]=
+OCAMLPACKS[] = $(PACKAGE_DEPENDENCIES) $(CAMLP4_PACKS)
+
+
+LIB_NAME = $(PACKAGE_NAME)
+APP_NAME = $(PACKAGE_NAME)
+API_DOC_TITLE =  "$(PACKAGE_NAME): $(PACKAGE_DESCRIPTION)"
+
+LIB_MODULES[] =
+  $(removesuffix $(basename $(ls src/lib/*.ml)))
+  $(PACKAGE_NAME)_about
+  efmp_data_t
+  efmp_data_j
+
+LIB_SOURCES = $(add-wrapper src/lib, .ml, $(LIB_MODULES))
+
+NATIVE_ENABLED = $(OCAMLOPT_EXISTS)
+BYTE_ENABLED = $(OCAMLC_EXISTS)
+
+OCAMLFLAGS = -bin-annot -annot -warn-error P -thread -absname
+OCAMLCFLAGS =
+OCAMLOPTFLAGS =
+OCAML_LINK_FLAGS +=
+OCAML_BYTE_LINK_FLAGS =
+OCAML_NATIVE_LINK_FLAGS =
+OCAMLFINDFLAGS =
+
+
+clean:
+    rm -fr _build OMakefile.omc OMakeroot.omc .omakedb .omakedb.lock
+
+.SUBDIRS: .
+    mkdir -p _build/src/lib
+    mkdir -p _build/src/test
+    mkdir -p _build/doc
+    vmount(-l, src/, _build/src/)
+
+    .SUBDIRS: _build/src/lib
+
+        $(LIB_NAME)_about.ml: :value: $(PACKAGE_VERSION)
+            echo '(** Version of the library. Currently $(PACKAGE_VERSION). *)' > $@
+            echo 'let version = "$(PACKAGE_VERSION)"' >> $@
+            echo 'let description = "$(PACKAGE_DESCRIPTION)"' >> $@
+
+        META:
+            echo "description = \"$(PACKAGE_DESCRIPTION)\"" > $@
+            echo "version = \"$(PACKAGE_VERSION)\"" >> $@
+            echo "archive(byte) = \"$(LIB_NAME).cma\"" >> $@
+            echo "archive(byte,plugin) = \"$(LIB_NAME).cma\"" >> $@
+            echo "archive(native) = \"$(LIB_NAME).cmxa\"" >> $@
+            echo "archive(native,plugin) = \"$(LIB_NAME).cmxs\"" >> $@
+            echo "exists_if = \"$(LIB_NAME).cma\"" >> $@
+            echo "requires = \"$(PACKAGE_DEPENDENCIES)\"" >> $@
+
+
+        efmp_data_t.ml: efmp_data_t.mli
+            echo "Produce mestml" > /dev/null
+        efmp_data_t.mli: efmp_data.atd
+            atdgen -t efmp_data.atd
+        efmp_data_j.ml: efmp_data_j.mli
+            echo "Produce mesjml" > /dev/null
+        efmp_data_j.mli: efmp_data.atd
+            atdgen -j -j-std efmp_data.atd
+
+        .DEFAULT:  $(OCamlLibrary $(LIB_NAME), $(LIB_MODULES)) META
+
+        install_lib: $(LIB_NAME).cma $(LIB_NAME).cmxa META uninstall_lib
+            ocamlfind install $(LIB_NAME) META \
+                *.cm[iox] *.o $(LIB_NAME).cma $(LIB_NAME).cmxs $(LIB_NAME).cmxa *.a
+
+        uninstall_lib:
+            ocamlfind remove $(LIB_NAME)
+
+
