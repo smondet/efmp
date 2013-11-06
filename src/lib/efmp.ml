@@ -901,12 +901,14 @@ module Execution_engine = struct
           >>= fun status ->
           begin match status with
           | `Failed_to_make problems ->
-            warn runtime "failed to start `make %s`: %s" make.make_name
-              (List.map problems 
-                 (fun (trgt, reason) ->
-                    sprintf "%s: %s" Target.(to_string trgt) reason)
-               |> String.concat ~sep:"; ");
-            return [key, Do_make make]
+            let reason =
+              sprintf "failed to start `make %s`: %s" make.make_name
+                (List.map problems 
+                   (fun (trgt, reason) ->
+                      sprintf "%s: %s" Target.(to_string trgt) reason)
+                 |> String.concat ~sep:"; ") in
+            let running = running_make_job make [] [reason] in
+            add_completed ~running key ~status:(`Failure reason)
           | `Should_start actions ->
             let keyed_actions =
               List.map actions (fun a -> (Unique_id.create (), a)) in
