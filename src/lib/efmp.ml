@@ -4,16 +4,6 @@ open Efmp_internal_pervasives
 (* Development *)
 (* EDSL For Managing Processes *)
 
-
-module Unique_id = struct
-  (** Provide pseudo-unique identifiers. *)
-
-  (** Create a fresh filename-compliant identifier. *)
-  let create () =
-    sprintf "efmp_%s_%09d"
-      Time.(now () |> to_filename) (Random.int 1_000_000_000)
-end
-
 module Path = struct
   (** A Path is a [string] for now, but this will change in the future. *)
 

@@ -142,3 +142,13 @@ end
 include Efmp_data_t
 module Data_j = Efmp_data_j
   
+
+module Unique_id = struct
+  (** Provide pseudo-unique identifiers. *)
+
+  (** Create a fresh filename-compliant identifier. *)
+  let create () =
+    sprintf "efmp_%s_%09d"
+      Time.(now () |> to_filename) (Random.int 1_000_000_000)
+end
+
