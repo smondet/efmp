@@ -1369,17 +1369,19 @@ module Command_line = struct
   (** This module gives a user interface to the functions in the [Command]
       module using the [cmdliner] library. *)
 
+  let default_persistence_file = 
+    ref (
+      Filename.concat (Sys.getenv "HOME") ".efmp/persist.json"
+    )
+
   let cmdliner_main make_actions_term =
     let open Cmdliner in
     let open Command in
     let version = "0.0.0" in
-    let default_persistence_file =
-      Filename.concat (Sys.getenv "HOME") ".efmp/persist.json"
-    in
     let persistence_file_arg =
       let docv = "FILE" in
       let doc = "Use $(docv) as persistence." in
-      Arg.(value & opt string default_persistence_file
+      Arg.(value & opt string !default_persistence_file
            & info ["P"; "persistence-file"] ~docv ~doc)
     in
     let list_of_arguments ~doc =
