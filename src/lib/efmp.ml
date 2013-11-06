@@ -3,6 +3,7 @@ open Efmp_internal_pervasives
 (* ************************************************************************** *)
 (* Development *)
 (* EDSL For Managing Processes *)
+module Unique_id = Unique_id
 
 module Path = struct
   (** A Path is a [string] for now, but this will change in the future. *)
