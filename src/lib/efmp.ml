@@ -371,7 +371,7 @@ module Host = struct
     begin match t.connection with
     | Host_home -> run_commands ~configuration t [cmd file]
     | Host_SSH ssh ->
-      with_playground ~configuration t "efmpexp_scripts/" >>= fun dest ->
+      with_playground ~configuration t "efmp_scripts/" >>= fun dest ->
       Process.succeed (scp_push ~configuration ssh ~src:[file] ~dest)
       >>= fun _ ->
       let remote_file = Filename.(concat dest (basename file)) in
@@ -396,7 +396,7 @@ module Host = struct
     with_new_pbs_playground ~configuration t
     >>= fun playground ->
     let actual_script = PBS_script.to_string ~playground pbs in
-    let tmp = Filename.temp_file "efmpexp_monpbs_" ".pbs" in
+    let tmp = Filename.temp_file "efmp_monpbs_" ".pbs" in
     IO.write_file tmp ~content:actual_script
     >>= fun () ->
     begin match t.connection with
@@ -1265,7 +1265,7 @@ module Command = struct
 
 
   let say fmt =
-    ksprintf (fun s -> printf "EFMP-exp: %s\n%!" s; return  ()) fmt
+    ksprintf (fun s -> printf "EFMP: %s\n%!" s; return  ()) fmt
 
   let display fmt =
     ksprintf (fun s -> printf "%s\n%!" s; return ()) fmt
@@ -1374,7 +1374,7 @@ module Command_line = struct
     let open Command in
     let version = "0.0.0" in
     let default_persistence_file =
-      Filename.concat (Sys.getenv "HOME") ".efmpexp/persist.json"
+      Filename.concat (Sys.getenv "HOME") ".efmp/persist.json"
     in
     let persistence_file_arg =
       let docv = "FILE" in
@@ -1406,7 +1406,7 @@ module Command_line = struct
        Term.info "log" ~version ~sdocs:"COMMON OPTIONS" ~doc ~man)
     in
     let init_cmd =
-      let doc = "Initialize the efmpexp instance." in
+      let doc = "Initialize the efmp instance." in
       let man = [] in
       (Term.((
            pure (fun persist_with -> do_init ~persist_with)
@@ -1415,7 +1415,7 @@ module Command_line = struct
        Term.info "init" ~version ~sdocs:"COMMON OPTIONS" ~doc ~man)
     in
     let wake_up_cmd =
-      let doc = "Wake-up the efmpexp instance to update itself." in
+      let doc = "Wake-up the efmp instance to update itself." in
       let man = [] in
       (Term.((
            pure (fun persist_with -> do_wake_up ~persist_with)
@@ -1424,7 +1424,7 @@ module Command_line = struct
        Term.info "wake-up" ~version ~sdocs:"COMMON OPTIONS" ~doc ~man)
     in
     let kill_cmd =
-      let doc = "Wake-up the efmpexp instance to update itself." in
+      let doc = "Wake-up the efmp instance to update itself." in
       let man = [] in
       (Term.((
            pure (fun persist_with keys -> do_murder ~persist_with ~keys)
@@ -1466,10 +1466,10 @@ module Command_line = struct
     in
     let default_cmd =
       let some_opts = Term.(pure (fun () -> ()) $ pure ()) in
-      let doc = "Efmpexp administration tool." in
+      let doc = "EFMP administration tool." in
       let man = [] (* TODO *) in
       (Term.(ret (pure (fun () -> `Help (`Plain, None)) $ some_opts)),
-       Term.info "efmpexp" ~version ~sdocs:"COMMON OPTIONS" ~doc ~man)
+       Term.info Sys.argv.(0) ~version ~sdocs:"COMMON OPTIONS" ~doc ~man)
     in
     let cmds =
       [info_cmd; init_cmd; wake_up_cmd; start_cmd; log_cmd; kill_cmd] in
