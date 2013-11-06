@@ -40,6 +40,9 @@ OCAML_BYTE_LINK_FLAGS =
 OCAML_NATIVE_LINK_FLAGS =
 OCAMLFINDFLAGS =
 
+doc: doc_library
+    rm -fr _build/doc/
+    cp -r _build/src/lib/doclib/ _build/doc/
 
 clean:
     rm -fr _build OMakefile.omc OMakeroot.omc .omakedb .omakedb.lock
@@ -47,7 +50,6 @@ clean:
 .SUBDIRS: .
     mkdir -p _build/src/lib
     mkdir -p _build/src/test
-    mkdir -p _build/doc
     vmount(-l, src/, _build/src/)
 
     .SUBDIRS: _build/src/lib
@@ -78,6 +80,14 @@ clean:
             atdgen -j -j-std efmp_data.atd
 
         .DEFAULT:  $(OCamlLibrary $(LIB_NAME), $(LIB_MODULES)) META
+
+        doclib/index.html: $(LIB_NAME).cma
+            mkdir -p doclib
+            ocamlfind ocamldoc \
+              -package $(concat \,, $(OCAMLPACKS)) \
+              -charset UTF-8 -d doclib/ -t "The EFMP Library v. $(PACKAGE_VERSION)" -html \
+              -keep-code -colorize-code *.mli *.ml -sort -I .
+        doc_library: doclib/index.html
 
         install_lib: $(LIB_NAME).cma $(LIB_NAME).cmxa META uninstall_lib
             ocamlfind install $(LIB_NAME) META \
