@@ -18,9 +18,11 @@ let say fmt = ksprintf (eprintf "EFMP-test: %s\n%!") fmt
 
 let failwithf fmt = ksprintf failwith fmt
 
+(* Create a host out an ssh hostname, usually something in .ssh/config *)
 let ssh_host name =
   Host.ssh ~playground:"/tmp/efmp_playground/" name
 
+(* A command that always fails *)
 let fail_cmd = "x=`exit 42`"
 
 let status_in_name status name =
@@ -39,6 +41,40 @@ let test_nohup_script ~succeed ~host =
            if succeed then "ls" else fail_cmd
          ]))
 
+let always_existing_file host = Target.(file_exists ~host "/etc/passwd")
+let never_existing_file host = Target.(file_exists ~host "/zzzzzzzzzzzzzzz")
+
+let make_nothing ~succeed host =
+  let name =
+    sprintf "make-mothing-%s" (Host.name host) |> status_in_name succeed  in
+  let target =
+    if succeed
+    then (always_existing_file host)
+    else (never_existing_file host)
+  in
+  Make.create ~name ~target []
+
+let make_one_file ~succeed host =
+  let file =
+    Filename.concat (Host.playground_exn host) 
+      (sprintf "test_files/%s" (Unique_id.create ())) in
+  let target = Target.(file_exists ~host file) in
+  let todo = 
+    let name =
+      sprintf "touch-test-file-%s" (Host.name host) |> status_in_name succeed in
+    Action.get_output ~host ~name [
+      sprintf "mkdir -p `dirname %s`" file;
+      if succeed
+      then sprintf "touch '%s'" file
+      else fail_cmd
+    ]
+  in
+  let name =
+    sprintf "make-test-file-%s" (Host.name host) |> status_in_name succeed in
+  Make.(create ~name ~target [
+      rule ~target ~todo [];
+  ])
+
 let () =
   let make_actions_term =
     let make_actions hosts arguments =
@@ -52,7 +88,10 @@ let () =
         List.map actual_hosts (fun host ->
             List.map [true;false] (fun succeed ->
                 [test_get_output ~succeed ~host;
-                 test_nohup_script ~succeed ~host;]))
+                 test_nohup_script ~succeed ~host;
+                 make_nothing ~succeed host;
+                 make_one_file ~succeed host;
+                ]))
         |> List.concat 
         |> List.concat 
       | l ->

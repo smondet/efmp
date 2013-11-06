@@ -40,6 +40,7 @@ echo "======================== SLEEP $sleep =========================="
 sleep $sleep
 run_test wake-up
 run_test wake-up
+run_test wake-up
 
 echo "=================================================="
 echo "info --all"
