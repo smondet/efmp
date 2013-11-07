@@ -89,7 +89,7 @@ let make_one_file_and_copy_it ~succeed_step_one ~succeed_step_two host =
   let todo =
     let name =
       sprintf "copy-test-file-%s" (Host.name host)
-      |> status_in_name succeed_step_one
+      |> status_in_name succeed_step_two
     in
     Action.get_output ~host ~name [
       sprintf "mkdir -p `dirname %s`" dst_of_copy;
