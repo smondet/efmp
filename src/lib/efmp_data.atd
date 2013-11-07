@@ -95,7 +95,7 @@ type todo = [
 
 type running_make = {
   todo: make;
-  actions: string list;
+  actions <ocaml mutable>: string list;
   history <ocaml mutable>: string list; (* TODO *)
 } <ocaml field_prefix="running_make_">
 

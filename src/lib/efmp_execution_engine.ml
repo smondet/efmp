@@ -239,6 +239,7 @@ let update_from_monitored_script_status ~runtime script_status =
 let update_all_running t ~runtime =
   let configuration = t.engine_configuration in
   let new_completed = ref [] in
+  let new_declared = ref [] in
   let add_completed ~key ~status ~running =
     let completed_status =
       match status with
@@ -297,8 +298,43 @@ let update_all_running t ~runtime =
         | [] ->
           warn runtime "%s Running `Make` jobs is NOT IMPLEMENTED" 
             make.running_make_todo.make_name;
-          (* TODO *)
-          keep_going ()
+          (* TODO: this can be highly optimized by starting some actions that
+             have been freed by the ones succeeding. Right now we “wait” for
+             all the current actions to finish before starting a new batch. *)
+          let all_successes =
+            List.for_all statuses ~f:(function (_, `Success) -> true | _ -> false) in
+          begin match all_successes  with
+          | false -> keep_going ()
+          | true ->
+            Make.start ~configuration make.running_make_todo
+            >>= fun status ->
+            begin match status with
+            | `Failed_to_make problems ->
+              let reason =
+                sprintf "`make %s` failed: %s" 
+                  make.running_make_todo.make_name
+                  (List.map problems 
+                     (fun (trgt, reason) ->
+                        sprintf "%s: %s" Target.(to_string trgt) reason)
+                   |> String.concat ~sep:"; ") in
+              add_completed ~running ~key ~status:(`Failure reason)
+            | `Should_start actions ->
+              let keyed_actions =
+                List.map actions (fun a -> (Unique_id.create (), a)) in
+              let keys = List.map keyed_actions fst in
+              log_change runtime "Make %s starts new actions:\n%s" key
+                (List.map keyed_actions (fun (k,a) ->
+                     sprintf "     * %s: %s" k (Todo.to_string a))
+                 |> String.concat ~sep:"\n");
+              new_declared := !new_declared @ keyed_actions;
+              make.running_make_actions <- keys;
+              keep_going ()
+            | `Nothing_to_do _ ->
+              log_change runtime "Nothing left to do for make %S %s"
+                  make.running_make_todo.make_name key;
+              add_completed ~running ~key ~status:`Success
+            end
+          end
         | some ->
           Debug.(s "Actions " % string_list some % s " are killing Make "
                  % s make.running_make_todo.make_name
@@ -357,6 +393,7 @@ let update_all_running t ~runtime =
       end)
   >>| List.concat
   >>= fun new_running ->
+  t.engine_declared <- !new_declared @ t.engine_declared;
   t.engine_running <- new_running;
   t.engine_completed <- !new_completed @ t.engine_completed;
   return ()
