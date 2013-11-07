@@ -45,6 +45,6 @@ run_test wake-up
 echo "=================================================="
 echo "info --all"
 echo "=================================================="
-run_test info --all
+ocaml ./src/test/efmp_test.ml info -P $persist_on --all --item-format '* $name: $status$n'
 
 rm -fr $persist_on
