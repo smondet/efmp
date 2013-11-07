@@ -54,10 +54,12 @@ let make_nothing ~succeed host =
   in
   Make.create ~name ~target []
 
-let make_one_file ~succeed host =
-  let file =
-    Filename.concat (Host.playground_exn host) 
-      (sprintf "test_files/%s" (Unique_id.create ())) in
+let new_host_temp_file host =
+  Filename.concat (Host.playground_exn host) 
+    (sprintf "test_files/%s" (Unique_id.create ()))
+
+let make_one_file_target_and_todo ~succeed host =
+  let file = new_host_temp_file host in
   let target = Target.(file_exists ~host file) in
   let todo = 
     let name =
@@ -69,11 +71,42 @@ let make_one_file ~succeed host =
       else fail_cmd
     ]
   in
+  (target, todo, file)
+
+let make_one_file ~succeed host =
+  let (target, todo, _) = make_one_file_target_and_todo ~succeed host  in
   let name =
     sprintf "make-test-file-%s" (Host.name host) |> status_in_name succeed in
   Make.(create ~name ~target [
       rule ~target ~todo [];
-  ])
+    ])
+
+let make_one_file_and_copy_it ~succeed_step_one ~succeed_step_two host =
+  let (target_one_file, todo_one_file, src_of_copy) =
+    make_one_file_target_and_todo ~succeed:succeed_step_one host  in
+  let dst_of_copy = new_host_temp_file host in
+  let target = Target.(file_exists ~host dst_of_copy) in
+  let todo =
+    let name =
+      sprintf "copy-test-file-%s" (Host.name host)
+      |> status_in_name succeed_step_one
+    in
+    Action.get_output ~host ~name [
+      sprintf "mkdir -p `dirname %s`" dst_of_copy;
+      if succeed_step_two
+      then sprintf "cp '%s' '%s'" src_of_copy dst_of_copy
+      else fail_cmd
+    ] in
+  let name =
+    sprintf "make-and-copy-test-file-%s" (Host.name host)
+    |> status_in_name succeed_step_one
+    |> status_in_name succeed_step_two
+  in
+  Make.(create ~target ~name [
+      rule ~target ~todo [target_one_file];
+      rule ~target:target_one_file ~todo:todo_one_file [];
+    ])
+
 
 let () =
   let make_actions_term =
@@ -91,7 +124,14 @@ let () =
                  test_nohup_script ~succeed ~host;
                  make_nothing ~succeed host;
                  make_one_file ~succeed host;
-                ]))
+                ])
+            @ begin
+              List.map [true; false] (fun succeed_step_one ->
+                  List.map [true; false] (fun succeed_step_two ->
+                      [make_one_file_and_copy_it host
+                         ~succeed_step_one ~succeed_step_two]
+                    )) |> List.concat
+            end)
         |> List.concat 
         |> List.concat 
       | l ->
