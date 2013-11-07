@@ -47,9 +47,9 @@ module Command = struct
   let display fmt =
     ksprintf (fun s -> printf "%s\n%!" s; return ()) fmt
 
-  let display_info ~persist_with ~all () =
+  let display_info ~persist_with ~all ?item_format () =
     with_engine ~persist_with ~f:(fun engine ->
-        display "%s" (Execution_engine.to_string ~all engine)
+        display "%s" (Execution_engine.to_string ?item_format ~all engine)
       )
 
   let display_log ~persist_with () =
@@ -168,10 +168,15 @@ module Command_line = struct
       let doc = "Get info about this instance." in
       let man = [] in
       Term.(
-        pure (fun persist_with all -> display_info ~all ~persist_with)
+        pure (fun persist_with all item_format ->
+            display_info ~item_format ~all ~persist_with)
         $ persistence_file_arg
         $ Arg.(value & flag & info ["A"; "all"] 
                  ~doc:"Display all processes even the completed ones.")
+        $ Arg.(value & 
+               opt string "- $key:\n  $name\n  $status_with_reason\n$history_list"
+               & info ["-F"; "item-format"] ~docv:"FORMAT-STRING"
+                 ~doc:"Use $(docv) as format for displaying jobs")
       ),
       Term.info "info" ~version ~sdocs:"COMMON OPTIONS" ~doc ~man
     in
