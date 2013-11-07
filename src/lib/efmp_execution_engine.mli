@@ -50,5 +50,6 @@ val kill :
     Deferred_result.t
 
 val to_string :
+  ?item_format:string ->
   ?all:bool -> t -> string
 

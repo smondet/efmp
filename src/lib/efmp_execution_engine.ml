@@ -485,33 +485,66 @@ let kill t ~key =
   return (runtime)
 
 
-let to_string ?(all=true) t =
+let to_string
+    ?(item_format="- $key:\n  $name\n  $status_with_reason\n$history_list")
+    ?(all=true) t =
   let buf = Buffer.create 42 in
   let print fmt = ksprintf (Buffer.add_string buf) fmt in
   let section fmt = print ("# " ^^ fmt ^^ "\n\n") in
   let subsection fmt = print ("## " ^^ fmt ^^ "\n\n") in
   let par fmt =  print (fmt ^^ "\n\n") in
-  let print_running =
+  let get_running_description =
     function
-    | Running_empty h -> print "Empty (host: %s)\n" (Host.to_string h)
-    | Running_make m -> print "Make: %s\n" m.running_make_todo.make_name
+    | Running_empty h -> sprintf "Empty (host: %s)" (Host.to_string h)
+    | Running_make m -> sprintf "Make: %s" m.running_make_todo.make_name
     | Running_pbs pbs -> 
-      print "PBS: %s as %s on %s\n"
+      sprintf "PBS: %s as %s on %s"
         pbs.running_pbs_script.pbs_name 
         pbs.running_pbs_job_id 
-        pbs.running_pbs_host.host_name;
-      List.iter pbs.running_pbs_history (print "    * %s\n")
+        pbs.running_pbs_host.host_name
     | Running_nohup n ->
-      print "Nohup-setsid: %s in %s on %s\n"
+      sprintf "Nohup-setsid: %s in %s on %s"
         n.running_nohup_script.nohup_name 
         n.running_nohup_playground 
         n.running_nohup_host.host_name;
-      List.iter n.running_nohup_history (print "    * %s\n")
     | Running_get_output go ->
-      print "Get-output: %s on %s\n"
+      sprintf "Get-output: %s on %s"
         go.running_get_output_name
-        go.running_get_output_host.host_name;
-      List.iter go.running_get_output_history (print "    * %s\n")
+        go.running_get_output_host.host_name
+  in
+  let get_history =
+    function
+    | Running_empty h -> []
+    | Running_make m -> m.running_make_history
+    | Running_pbs pbs -> pbs.running_pbs_history
+    | Running_nohup n -> n.running_nohup_history
+    | Running_get_output go -> go.running_get_output_history
+  in
+  let format_item ?running ?status key =
+    let buf = Buffer.create 42 in
+    Buffer.add_substitute buf (function
+      | "n" -> "\n"
+      | "key" -> key
+      | "status" ->
+        begin match status with
+        | Some (`Success _) -> "SUCCESS"
+        | Some (`Failure (_, _)) -> "FAILURE"
+        | None -> ""
+        end
+      | "status_with_reason" ->
+        begin match status with
+        | Some (`Success _) -> "SUCCESS"
+        | Some (`Failure (_, r)) -> sprintf "FAILURE: %s" r
+        | None -> ""
+        end
+      | "name" -> 
+        Option.value_map running ~default:"NO NAME" ~f:get_running_description 
+      | "history_list" ->
+        Option.value_map running ~default:[] ~f:get_history 
+        |> List.map ~f:(sprintf "    * %s\n")
+        |> String.concat ~sep:""
+      | s -> sprintf "?? $%s ??" s) item_format;
+    Buffer.contents buf
   in
   section "Configuration";
   par "%s" (Configuration.to_string t.engine_configuration);
@@ -525,20 +558,24 @@ let to_string ?(all=true) t =
   par "";
   subsection "Running";
   List.iter t.engine_running (fun (key, running) ->
-      print "- `%s`:\n" key;
-      print_running running;
+      print "%s" (format_item key ~running);
     );
   par "";
   if all then (
     subsection "Completed";
     List.iter t.engine_completed (fun (key, comp) ->
-        print "- `%s`:" key;
-        begin match comp.completed_status with
-        | `Success r -> print " **SUCCESS**\n"; print_running r;
-        | `Failure (ro, r) -> 
-          print " **FAILURE**: %s\n" r; 
-          (match ro with None -> () | Some r -> print_running r);
-        end);
+        let running =
+          match comp.completed_status with
+          | `Success r ->  Some r
+          | `Failure (ro, r) ->  ro in
+        print "%s" (format_item key ~status:comp.completed_status ?running);
+        (* print "- `%s`:" key; *)
+        (* begin match comp.completed_status with *)
+        (* | `Success r -> print " **SUCCESS**\n"; print_running r; *)
+        (* | `Failure (ro, r) -> *) 
+        (*   print " **FAILURE**: %s\n" r; *) 
+        (*   (match ro with None -> () | Some r -> print_running r); *)
+      );
     par "";
   );
   section "Log%s" (if not all then " (truncated)" else "");
