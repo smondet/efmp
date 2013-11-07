@@ -1,3 +1,4 @@
+(** Internal “standard library” of the library. *)
 
 (** The [doc] module is not expected to depend on any other library *)
 module Doc = struct
@@ -152,3 +153,12 @@ module Unique_id = struct
       Time.(now () |> to_filename) (Random.int 1_000_000_000)
 end
 
+module Path = struct
+  (** A Path is a [string] for now, but this will change in the future. *)
+
+  type t = path
+
+  let to_json = Data_j.string_of_path
+  let of_json s =
+    try `Ok (Data_j.path_of_string s) with e -> `Error (`Json_parsing e)
+end
