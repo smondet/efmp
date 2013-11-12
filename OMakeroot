@@ -44,6 +44,10 @@ doc: doc_library
     rm -fr _build/doc/
     cp -r _build/src/lib/doclib/ _build/doc/
 
+install: install_library
+
+uninstall: uninstall_library
+
 clean:
     rm -fr _build OMakefile.omc OMakeroot.omc .omakedb .omakedb.lock
 
@@ -89,11 +93,14 @@ clean:
               -keep-code -colorize-code *.mli *.ml -sort -I .
         doc_library: doclib/index.html
 
-        install_lib: $(LIB_NAME).cma $(LIB_NAME).cmxa META uninstall_lib
+        $(LIB_NAME).cmxs: $(LIB_NAME).cmxa $(LIB_NAME).a
+            ocamlopt  $(LIB_NAME).cmxa $(LIB_NAME).a -shared -o $(LIB_NAME).cmxs
+
+        install_library: $(LIB_NAME).cma $(LIB_NAME).cmxa META uninstall_library $(LIB_NAME).cmxs
             ocamlfind install $(LIB_NAME) META \
                 *.cm[iox] *.o $(LIB_NAME).cma $(LIB_NAME).cmxs $(LIB_NAME).cmxa *.a
 
-        uninstall_lib:
+        uninstall_library:
             ocamlfind remove $(LIB_NAME)
 
 
