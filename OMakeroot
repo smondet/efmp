@@ -51,6 +51,11 @@ uninstall: uninstall_library
 clean:
     rm -fr _build OMakefile.omc OMakeroot.omc .omakedb .omakedb.lock
 
+
+NATIVE_LIBRARY_TARGETS=$(if $(NATIVE_ENABLED), $(LIB_NAME).a $(LIB_NAME).cmxa  $(LIB_NAME).cmxs)
+
+echo "Native targets: $(NATIVE_LIBRARY_TARGETS)"
+
 .SUBDIRS: .
     mkdir -p _build/src/lib
     mkdir -p _build/src/test
@@ -96,9 +101,9 @@ clean:
         $(LIB_NAME).cmxs: $(LIB_NAME).cmxa $(LIB_NAME).a
             ocamlopt  $(LIB_NAME).cmxa $(LIB_NAME).a -shared -o $(LIB_NAME).cmxs
 
-        install_library: $(LIB_NAME).cma $(LIB_NAME).cmxa META uninstall_library $(LIB_NAME).cmxs
+        install_library: $(LIB_NAME).cma META uninstall_library $(NATIVE_LIBRARY_TARGETS)
             ocamlfind install $(LIB_NAME) META \
-                *.cm[iox] *.o $(LIB_NAME).cma $(LIB_NAME).cmxs $(LIB_NAME).cmxa *.a
+                *.cm[iox] *.o $(LIB_NAME).cma $(NATIVE_LIBRARY_TARGETS)
 
         uninstall_library:
             ocamlfind remove $(LIB_NAME)
