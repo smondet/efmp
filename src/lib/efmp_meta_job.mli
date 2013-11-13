@@ -68,6 +68,7 @@ module Wait_for : sig
 
   type t = wait_for
 
+  val to_string: t -> string
   val condition : name:string -> and_start:todo -> target -> todo
 
   val decide :

@@ -206,6 +206,8 @@ let start_all_declared t ~runtime =
         begin match should with
         | `Start todo ->
           let new_key = Unique_id.create () in
+          log_change runtime "Wait_for %s starts action: %s"
+            (Wait_for.to_string wf) (Todo.to_string todo);
           return [new_key, todo]
         | `Wait ->
           return [key, Do_wait_for wf]
