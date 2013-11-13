@@ -35,6 +35,16 @@ if [ $# -gt 0 ]; then
   show_info After second wake-up
 fi
 
+echo "======================= TEST WAIT FOR ==========================="
+tmp_file=`mktemp`
+rm $tmp_file
+ocaml ./src/test/efmp_test.ml start -P $persist_on test-wait-for $tmp_file
+run_test wake-up
+
+touch $tmp_file
+run_test wake-up
+
+
 sleep=2
 echo "======================== SLEEP $sleep =========================="
 sleep $sleep

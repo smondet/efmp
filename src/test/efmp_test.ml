@@ -107,6 +107,14 @@ let make_one_file_and_copy_it ~succeed_step_one ~succeed_step_two host =
       rule ~target:target_one_file ~todo:todo_one_file [];
     ])
 
+let wait_for_one_file_and_cat_it ~file host =
+  let name = sprintf "wait_for_one_file_and_cat_it" in
+  Wait_for.condition ~name
+    Target.(file_exists ~host file)
+    ~and_start:Action.(
+        let name = sprintf "action-of-wait_for_one_file_and_cat_it" in
+        get_output ~host ~name [sprintf "cat '%s'" file])
+
 
 let () =
   let make_actions_term =
@@ -134,6 +142,9 @@ let () =
             end)
         |> List.concat 
         |> List.concat 
+      | ["test-wait-for"; file] ->
+        List.map actual_hosts (fun host ->
+            wait_for_one_file_and_cat_it ~file host)
       | l ->
         say "Don't know what to do with [%s]" (String.concat ~sep:", " l);
         []
