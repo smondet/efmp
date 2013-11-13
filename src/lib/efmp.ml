@@ -226,11 +226,8 @@ module Command_line = struct
                then begin
                  say "Dry-run, Not-doing: ["
                  >>= fun () ->
-                 while_sequential todos (function
-                   | Do_action a ->
-                     say "    %s" (Action.to_string a)
-                   | Do_make m ->
-                     say "    %s" (Make.to_string m))
+                 while_sequential todos (fun todo ->
+                     say "    %s" (Todo.to_string todo))
                  >>= fun _ ->
                  say "]"
                end else begin
