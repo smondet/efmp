@@ -15,6 +15,21 @@ run_test() {
   ocaml ./src/test/efmp_test.ml $cmd -P $persist_on $*
 }
 
+if [ "$1" = "--interactive" ] || [ "$1" = "-i" ]; then
+  if [ $# -le 1 ] ; then
+    echo "Not enough args"
+    exit 1
+  fi
+  persist_on="/tmp/efmp_test_interactive"
+  shift
+  cmd=$1
+  shift 
+  ocaml ./src/test/efmp_test.ml $cmd -P $persist_on $*
+  code=$?
+  echo "Returned $code (persisting on: $persist_on)"
+  exit $code
+fi
+
 show_info() {
   echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
   echo "$*"
