@@ -86,9 +86,16 @@ type make = {
   rules: rule list;
 } <ocaml field_prefix="make_">
 
+type wait_for = {
+  name: string;
+  condition: target;
+  and_start: todo;
+} <ocaml field_prefix="wait_for_">
+
 type todo = [
   | Do_action of action
   | Do_make of make
+  | Do_wait_for of wait_for
 ] <ocaml repr="classic">
 
 (* End of the “declarative” part *)

@@ -140,10 +140,29 @@ module Make = struct
     start_making_target ~configuration t ~target:t.make_final_target
 
 end
+module Wait_for = struct
+
+  type t = wait_for
+  let to_string t = t.wait_for_name
+
+  let condition ~name ~and_start wait_for_condition =
+    Do_wait_for {wait_for_name = name; wait_for_and_start = and_start;
+                 wait_for_condition}
+
+  let decide ~configuration t =
+    Target.check ~configuration t.wait_for_condition
+    >>= fun status ->
+    begin match status with
+    | `Done -> return (`Start t.wait_for_and_start)
+    | `To_build -> return (`Wait)
+    end
+
+end
 module Todo = struct
   type t = todo
   let to_string = function
   | Do_action a -> Action.to_string a
   | Do_make a -> Make.to_string a
+  | Do_wait_for w -> Wait_for.to_string w
 end
 

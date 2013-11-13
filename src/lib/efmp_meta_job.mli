@@ -64,6 +64,22 @@ module Target : sig
   val to_string : target -> string
 
 end
+module Wait_for : sig
+
+  type t = wait_for
+
+  val condition : name:string -> and_start:todo -> target -> todo
+
+  val decide :
+    configuration:configuration ->
+    t ->
+    ([ `Start of todo | `Wait ],
+     [> `process of
+          [> `exec of string * string list ] * [> `exn of exn ] ])
+      Deferred_result.t
+
+
+end
 
 module Make : sig
 

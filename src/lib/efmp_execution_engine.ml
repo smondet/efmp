@@ -200,6 +200,16 @@ let start_all_declared t ~runtime =
           let running = running_make_job make [] ["Nothing_to_do"] in
           add_completed ~running key ~status:`Success
         end
+      | Do_wait_for wf ->
+        Wait_for.decide ~configuration wf
+        >>= fun should ->
+        begin match should with
+        | `Start todo ->
+          let new_key = Unique_id.create () in
+          return [new_key, todo]
+        | `Wait ->
+          return [key, Do_wait_for wf]
+        end
     )
   >>| List.concat 
   >>= fun new_declared ->
@@ -552,9 +562,8 @@ let to_string
   subsection "Declared To Do";
   List.iter t.engine_declared (fun (key, todo) ->
       print "- `%s`:\n" key;
-      match todo with
-      | Do_make make -> print "Make %s\n" make.make_name
-      | Do_action action -> print "%s\n" (Action.to_string action));
+      print "%s\n" (Todo.to_string todo)
+    );
   par "";
   subsection "Running";
   List.iter t.engine_running (fun (key, running) ->
