@@ -308,8 +308,6 @@ let update_all_running t ~runtime =
         in
         begin match failures with
         | [] ->
-          warn runtime "%s Running `Make` jobs is NOT IMPLEMENTED" 
-            make.running_make_todo.make_name;
           (* TODO: this can be highly optimized by starting some actions that
              have been freed by the ones succeeding. Right now we “wait” for
              all the current actions to finish before starting a new batch. *)
