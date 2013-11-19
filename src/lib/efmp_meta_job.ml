@@ -126,7 +126,9 @@ module Make = struct
             let to_start =
               List.filter_map other 
                 ~f:(function `Should_start l -> Some l | _ -> None)
-              |> List.concat in
+              |> List.concat 
+              |> List.dedup
+            in
             return (`Should_start to_start)
           | more ->
             return (`Failed_to_make ((target, "Failed dependencies") :: more))
