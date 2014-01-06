@@ -245,16 +245,9 @@ module Command_line = struct
          )),
        Term.info "start" ~version ~sdocs:"COMMON OPTIONS" ~doc ~man)
     in
-    let default_cmd =
-      let some_opts = Term.(pure (fun () -> ()) $ pure ()) in
-      let doc = "EFMP administration tool." in
-      let man = [] (* TODO *) in
-      (Term.(ret (pure (fun () -> `Help (`Plain, None)) $ some_opts)),
-       Term.info Sys.argv.(0) ~version ~sdocs:"COMMON OPTIONS" ~doc ~man)
-    in
     let cmds =
       [info_cmd; init_cmd; wake_up_cmd; start_cmd; log_cmd; kill_cmd] in
-    match Term.eval_choice default_cmd cmds with
+    match Term.eval_choice info_cmd cmds with
     | `Ok f -> f
     | `Error _ -> exit 1
     | _ -> exit 0
