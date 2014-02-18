@@ -29,23 +29,23 @@ module Action : sig
     string ->
     [> `Error of [> `Json_parsing of exn ]
     | `Ok of Data_j.action ]
-  val start :
-    configuration:configuration ->
-    action ->
-    ([ `Fail_to_start_nohup_job of
-         nohup_script * string * string * string * string
+
+  val start : configuration:configuration -> action ->
+    ([> `Fail_to_start_nohup_job of
+          nohup_script * string * string * string * string
      | `Fail_to_start_pbs_job of
-         pbs_script * string * string * string * string
+          pbs_script * string * string * string * string
      | `Failure_get_output of
-         string * string list * string * string * string
+          string * string list * string * string * string
      | `Start_nohup_job of nohup_script * string
      | `Start_pbs_job of pbs_script * string * string
      | `Success_empty
      | `Success_get_output of string * string list * string * string ],
-     [> `host of [> `missing_playground of Efmp_host.t ]
+     [> `IO of [> `Write_file_exn of string * exn ]
+     | `host of [> `missing_playground of host ]
      | `process of
           [> `exec of string * string list ] *
-            [> `exn of exn | `non_zero of string ]
+          [> `exn of exn | `non_zero of string ]
      | `write_file_error of string * exn ])
       Deferred_result.t
 end

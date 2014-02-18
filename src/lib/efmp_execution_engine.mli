@@ -33,10 +33,12 @@ val runtimes_to_string : runtime list -> string
 val wake_up :
   t ->
   (runtime,
-   [> `host of [> `missing_playground of host ]
+   [> `IO of [> `Write_file_exn of string * exn ]
+   | `host of
+        [> `missing_playground of Efmp_internal_pervasives.host ]
    | `process of
         [> `exec of string * string list ] *
-          [> `exn of exn | `non_zero of string ]
+        [> `exn of exn | `non_zero of string ]
    | `qstat_parsing of string
    | `write_file_error of string * exn ])
     Deferred_result.t

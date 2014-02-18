@@ -75,7 +75,7 @@ let run_commands ~configuration t cmds =
         System.Shell.execute cmd
         >>= fun (out, err, status) ->
         begin match status with
-        | `exited 0 ->
+        | `Exited 0 ->
           return (out, err)
         | other -> fail (`non_zero (out, err, other))
         end)
@@ -89,12 +89,12 @@ let run_commands ~configuration t cmds =
     | `Error (`non_zero (out, err, e)) ->
       let msg =
         match e with
-        |  (`exited n) -> sprintf "exited:%d" n
-        |  (`signaled n) -> sprintf "signaled:%d" n
-        |  (`stopped n) -> sprintf "stopped:%d" n
+        |  (`Exited n) -> sprintf "exited:%d" n
+        |  (`Signaled n) -> sprintf "signaled:%d" n
+        |  (`Stopped n) -> sprintf "stopped:%d" n
       in
       return (`Failure (out, err, msg))
-    | `Error  (`shell (_, `exn e)) ->
+    | `Error  (`Shell (_, `Exn e)) ->
       let msg = sprintf "exception:%S" (Printexc.to_string e) in
       return (`Failure ("", "", msg))
     end
@@ -326,7 +326,7 @@ let file_exists host ~configuration ~path =
   | Host_home -> 
     begin System.file_info path
       >>< function
-      | `Ok `absent | `Error _ -> return false
+      | `Ok `Absent | `Error _ -> return false
       | `Ok _ ->
         Debug.(s "file " % s path % s " exists" @ very_verbose);
         return true

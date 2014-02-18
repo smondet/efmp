@@ -35,7 +35,7 @@ module Command = struct
           >>= fun () ->
           IO.write_file persist_with ~content:(Execution_engine.to_json engine)
         end
-      | `Error (`read_file_error (_, _)) ->
+      | `Error (`IO (`Read_file_exn (_, _))) ->
         fail (`failure (sprintf "Cannot open the persistence file: %s, maybe the \
                                  instance is not initialized?" persist_with))
     end
@@ -269,18 +269,8 @@ module Command_line = struct
       sprintf "Host %s is missing its playground." (Host.to_string t)
     | `qstat_parsing s ->
       sprintf "Error while parsing QStat output: %s" s
-    | `shell (cmd, _) ->
-      (* [> `exited of int | `exn of exn | `signaled of int | `stopped of int ] *)
-      sprintf "Shell command %S failed" cmd
-    | `system (what, wrong) ->
-      sprintf "System error while %s: %s"
-        begin match what with
-        | `make_directory s -> sprintf "making directory %S" s
-        end
-        begin match wrong with
-        | `exn e -> sprintf "Exception: %s" (exn e)
-        | `wrong_access_rights i -> sprintf "Wrong access rights: %o" i
-        end
+    | `Shell _  | `System _ as e -> sprintf "System error: %s" (System.error_to_string e)
+    | `IO _ as e -> sprintf "IO error: %s" (IO.error_to_string e)
 
   let run_main make_actions_term =
     match Lwt_main.run (cmdliner_main make_actions_term ()) with

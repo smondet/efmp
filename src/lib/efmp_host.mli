@@ -51,11 +51,13 @@ val qsub_pbs_script :
   Efmp_job_script.PBS_script.t ->
   ([ `Failure of string * string * string
    | `Success of string * string ] * string,
-   [> `host of [> `missing_playground of t ]
+   [> `IO of
+        [> `Write_file_exn of Efmp_internal_pervasives.IO.path * exn ]
+   | `host of
+        [> `missing_playground of Efmp_internal_pervasives.host ]
    | `process of
         [> `exec of string * string list ] *
-          [> `exn of exn | `non_zero of string ]
-   | `write_file_error of string * exn ])
+        [> `exn of exn | `non_zero of string ] ])
     Deferred_result.t
 
 
@@ -70,6 +72,8 @@ val nohup_script :
    | `process of
         [> `exec of string * string list ] *
           [> `exn of exn | `non_zero of string ]
+   | `IO of
+        [> `Write_file_exn of string * exn ]
    | `write_file_error of string * exn ])
     Deferred_result.t
 
